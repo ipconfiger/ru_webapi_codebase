@@ -1,0 +1,29 @@
+[package]
+name = "ru_webapi_codebase"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+axum = "0.6.20"
+clap = "3.2.25"
+ru-di = "0.1.1"
+serde = { version = "1.0.196", features = ["derive"] }
+serde_json = "1.0.113"
+tokio = { version = "1.36.0", features = ["full"] }
+futures = "0.3.30"
+redis = { version = "0.23", features = ["tokio-comp"] }
+reqwest = {version = "0.11.27", default-features = false, features = ["rustls-tls", "serde_json", "json"] }
+chrono = "0.4.38"
+http = "0.2.11"
+log = "0.4.20"
+simple_logger = "4.3.3"
+uuid = { version = "1.10.0", features = ["v4", "fast-rng"] }
+hmac = "0.12.1"
+sha1 = "0.10.6"
+base64 = "0.21.7"
+libaes = "0.7.0"
+utoipa = { version = "4.2.3", features = ["axum_extras"] }
+utoipa-rapidoc = { version = "4", features = ["axum"] }
+aliyun-sts-rust-sdk = { version ="0.1.1", path="/Users/alex/Projects/workspace/aliyun-sts-rust-sdk"}
+sqlx = { version = "0.7.3", default-features = false, features = ["tls-rustls", "runtime-tokio", "postgres", "json", "uuid", "bigdecimal", "macros"] }
+sqlx_struct_enhanced = { version = "*", path = "/Users/alex/Projects/workspace/sqlx_struct_enhanced", features = ["postgres"] }

@@ -1,0 +1,14 @@
+UserLogin:
+  # 用户信息
+  @pg varchar(32)
+  @rust String
+  username: 用户名
+
+  @pg varchar(256)
+  @rust String
+  password: 密码
+
+  @pg INT
+  @rust i32
+  ts: 时间戳
+

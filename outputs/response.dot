@@ -1,0 +1,23 @@
+digraph G {
+  fontname = "Bitstream Vera Sans"
+  fontsize = 10
+
+  node [
+    fontname = "Bitstream Vera Sans"
+    fontsize = 12
+    shape = "record"
+  ]
+
+  edge [
+    fontname = "Bitstream Vera Sans"
+    fontsize = 8
+  ]
+  
+  // 定义类
+  LoginResponse [label = "{ -LoginResponse- |+ token :  令牌\l+ expires :  过期时间\l }"]
+  
+
+  edge [arrowhead = "vee", style = "dashed"]
+  
+
+}

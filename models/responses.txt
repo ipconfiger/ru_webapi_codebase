@@ -1,0 +1,9 @@
+LoginResponse:
+  # 登陆结果
+  @rust String
+  @ts string
+  token: 令牌
+
+  @rust i32
+  @ts number
+  expires: 过期时间

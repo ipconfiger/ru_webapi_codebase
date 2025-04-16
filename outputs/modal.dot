@@ -1,0 +1,23 @@
+digraph G {
+  fontname = "Bitstream Vera Sans"
+  fontsize = 10
+
+  node [
+    fontname = "Bitstream Vera Sans"
+    fontsize = 12
+    shape = "record"
+  ]
+
+  edge [
+    fontname = "Bitstream Vera Sans"
+    fontsize = 8
+  ]
+  
+  // 定义类
+  UserLogin [label = "{ -UserLogin- |+ username :  用户名\l+ password :  密码\l+ ts :  时间戳\l }"]
+  
+
+  edge [arrowhead = "vee", style = "dashed"]
+  
+
+}

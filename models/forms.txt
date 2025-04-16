@@ -1,0 +1,9 @@
+LoginForm:
+  # 登陆表单
+  @rust String
+  @ts string
+  username: 用户名
+
+  @rust String
+  @ts string
+  password: 密码

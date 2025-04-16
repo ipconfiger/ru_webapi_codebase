@@ -1,0 +1,5 @@
+{% for entity in entities %}interface {{ entity.name }} {
+    {% for fd in entity.fields %}{{fd.name}}: {{ fd.types.ts.name }};
+    {% endfor %}
+}
+{% endfor %}
