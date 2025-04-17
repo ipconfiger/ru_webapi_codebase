@@ -35,6 +35,18 @@ cargo generate --git git@github.com:ipconfiger/ru_webapi_codebase.git --name <yo
 cd <your-project-name>
 cargo build
 ```
+### A3：使用 ru-cpj
+这是个自己顺手做的项目，起因是cargo-generate最新版本不支持stable的最新版rustc。
+
+项目地址在： https://github.com/ipconfiger/ru-cpj
+
+在终端执行命令
+```bash
+cargo install ru-cpj
+ru-cpj <your-project-name> https://github.com/ipconfiger/ru_webapi_codebase/archive/refs/tags/0.1.1.zip
+```
+
+
 
 ## B: 项目依赖
 
