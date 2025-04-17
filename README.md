@@ -74,3 +74,10 @@ example 为定义的模版子Router结构，最好不要修改
 ```
 
 
+## C:AI辅助支持
+
+项目中定义了 .cousorrules 文件，用于支持在Cousor中使用AI辅助生成，1.模型 2.handler 3.service。
+
+如果你使用Cousor.app，直接享受就可以
+
+如果你使用Trae开发，需要在生成 1.模型 2.handler 3.service 的时候，把这个文件拖动加入到对话中。

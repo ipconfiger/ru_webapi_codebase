@@ -1,0 +1,146 @@
+# Cursor AI通用规则
+- 本项目使用Rust语言编写，使用Rust的标准库和第三方库来实现。
+- 本项目的代码必须符合Rust的编码规范，使用Rust的最佳实践。
+- 本项目的代码必须符合Rust的安全规范，使用Rust的安全特性。在编写代码时，必须注意避免潜在的安全问题。定义函数的时候，参数定义借用优先于clone。
+- 本项目的代码必须符合Rust的性能规范，使用Rust的性能特性。在编写代码时，必须注意避免潜在的性能问题。
+
+# models定义规范
+- models定义在src/models目录下，下面是models定义的范例：
+数据库表定义的模型：
+```txt
+UserLogin:          #模型的名字
+  # 用户信息
+  @pg varchar(32)   #输出到SQL的类型定义
+  @rust String      #输出到Rust代码的类型定义
+  username: 用户名   #字段的名称和注释
+
+  @pg varchar(256)
+  @rust String
+  password: 密码
+
+  @pg INT
+  @rust i32
+  ts: 时间戳
+```
+数据库表定义的模型输出到 src/models/models.txt
+
+handler函数参数模型的定义：
+```txt
+LoginForm:          #模型的名字
+  # 登陆表单
+  @rust String      #输出到Rust代码的类型定义
+  @ts string        #输出到TypeScript代码的类型定义
+  username: 用户名   #字段的名称和注释
+
+  @rust String
+  @ts string
+  password: 密码
+```
+handler函数参数模型的定义输出到 src/models/forms.txt
+
+handler函数返回模型的定义：
+```txt
+StatusResponse:     #模型的名字
+  # 状态码
+  @rust String      #输出到Rust代码的类型定义
+  @ts string        #输出到TypeScript代码的类型定义
+  status: 状态值     #字段的名称和注释
+```
+handler函数返回模型的定义输出到 src/models/responses.txt
+
+定义完模型后需要运行 ./scripts/sync.sh 来同步生成代码.
+生成代码后需要在src/main.rs中加入新生成模型的引用
+修改的部分如下：
+```rust
+#[derive(OpenApi)]
+#[openapi(
+paths(
+    openapi,
+    example::handlers::it_works,
+),
+components(
+    schemas(
+        ErrResponse
+        // 新生成的模型需要加入到这里
+    ),
+),
+)]
+struct ApiDoc;
+```
+
+# handler函数定义规范
+- handler函数定义在src/mod_name 目录下，handlers.rs 中 下面是handler函数定义的范例：
+```rust
+#[utoipa::path(
+    请求的method get 或者 post,
+    path = "handler的访问路径，参数用:参数名 的形式定义",
+    request_body = Json Body的类型名字, // 如果有才要定义，没有就不填这一项
+    params(路径参数的类型, 查询参数的类型) // 如果有才要定义，没有就不填这一项
+    responses(
+            (status = 200, description = "handler函数的功能说明", body = 返回的类型),
+            (status = 500, description = "服务器错误", body = ErrResponse),
+            (status = 401, description = "认证失败", body = ErrResponse),
+            (status = 403, description = "没有权限", body = ErrResponse)
+    ),
+    security(
+        ("bearerAuth" = [])
+    )
+)]
+pub async fn 函数名(
+  State(state): State<AppContext>, // 如果有状态需要传入，没有就不填这一项
+  Path(路径参数): Path<路径参数的类型>, // 如果有路径参数，没有就不填这一项
+  Query(查询参数): Query<查询参数的类型>, // 如果有查询参数，没有就不填这一项
+  Json(请求体): Json<请求体的类型>, // 如果有请求体，没有就不填这一项)
+) -> APIResult<返回的类型> {
+}
+```
+在创建了handler函数后需要在 handlers.rs 中的router函数中加入路由定义
+```rust
+pub fn router(state: AppContext) -> Router {
+    Router::new()
+        .route("/", get(函数名))
+        // 加入到这里，比如 .route("handler的访问路径，参数用:参数名 的形式定义", 请求的method(函数名))
+        .with_state(state)
+}
+```
+另外还要在app.rs 最后面的
+```rust
+#[derive(OpenApi)]
+#[openapi(
+paths(
+    openapi,
+    example::handlers::it_works,
+    // 加入到这里，比如.模型名::handlers::handler函数名
+),
+components(
+    schemas(
+        ErrResponse
+    ),
+),
+)]
+```
+# service结构体定义规范
+- service结构体定义在src/services 目录下，每个service定义一个文件:服务名_services.rs，下面是service结构体定义的范例：
+```rust
+pub struct 服务名Services {
+    pub(crate) db: sqlx::Pool<sqlx::Postgres>,
+    pub(crate) redis: RedisHolder,
+}
+impl Service for 服务名Services {
+    fn init(db: sqlx::Pool<sqlx::Postgres>, redis: RedisHolder) -> Self {
+        Self{db, redis}
+    }
+}
+```
+在创建了service结构体后需要在 mod.rs 中的init函数中将Service注入到DI容器中
+```rust
+//  先添加
+pub mod 服务名_service;
+
+// 再注册
+pub async fn init() {
+    register_service::<ExampleServices>();
+    // 加入到这里，比如 register_service::<服务名Services>();
+}
+
+```
