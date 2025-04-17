@@ -1,6 +1,7 @@
+use log::info;
 use crate::app::{init, start_serve};
 use crate::cli::run_command;
-use crate::conf::{config_from_matches, get_matches};
+use crate::conf::get_config;
 
 mod conf;
 mod cli;
@@ -13,6 +14,7 @@ mod models;
 mod utilities;
 mod example;
 mod redis;
+mod services;
 
 #[warn(dead_code)]
 fn simple_logger_level(){
@@ -23,16 +25,21 @@ fn simple_logger_level(){
 #[tokio::main]
 async fn main() {
     simple_logger_level();
-    let matches = get_matches();
-    let config = config_from_matches(&matches);
-    if let Some(cmd) = matches.get_one::<String>("cmd") {
-        run_command(cmd.as_str(), &config).await;
-    }else{
-        if matches.is_present("serve") {
-            init(&config).await;
-            start_serve(&config).await;
-        }else{
-            println!("Present --serve to start server, or --cmd to run command");
+    //let matches = get_matches();
+    let config = get_config();
+    let config2 = config.clone();
+    if let Some(cmd) = config.command {
+        match cmd{ 
+            conf::Commands::Serve => {
+                init(&config2).await;
+                start_serve(&config2).await;
+            },
+            conf::Commands::Cli => {
+                println!("cli command");
+                run_command("cli", &config2).await;
+            }
         }
+        info!("Command not match any options");
+        return;
     }
 }

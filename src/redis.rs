@@ -34,12 +34,12 @@ impl RedisSession {
         }
     }
 
-    pub async fn set(&mut self, key: &str, val: &str, time_out: u32) {
+    pub async fn set(&mut self, key: &str, val: &str, time_out: i64) {
         if let Err(err) = self.conn.set::<&str, &str, ()>(key, val).await {
             error!("set redis val with err:{err:?}");
         } else {
             if time_out > 0 {
-                if let Err(err) = self.conn.expire::<&str, ()>(key, time_out as usize).await {
+                if let Err(err) = self.conn.expire::<&str, ()>(key, time_out).await {
                     error!("set redis expire with err:{err:?}");
                 }
             }

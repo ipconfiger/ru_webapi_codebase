@@ -2,9 +2,10 @@ use std::net::SocketAddr;
 use std::time::Duration;
 use axum::response::{Html, IntoResponse, Response};
 use axum::{Json, Router};
+use axum::http::{header, Request, StatusCode};
 use axum::middleware::Next;
 use axum::routing::get;
-use http::{header, Request, StatusCode};
+//use http::{header, Request, StatusCode};
 use log::{error, info};
 use serde_json::json;
 use sqlx::postgres::PgPoolOptions;
@@ -12,7 +13,7 @@ use utoipa::OpenApi;
 use utoipa_rapidoc::RapiDoc;
 use crate::errors::ErrResponse;
 use crate::conf::Configuration;
-use crate::example;
+use crate::{example, services};
 use crate::redis::{RedisHolder, RedisSession};
 
 #[derive(Clone)]
@@ -34,7 +35,7 @@ pub async fn init(cfg: &Configuration) {
     ru_di::Di::register(move |_| {
         pool_inner.clone()
     });
-    example::init().await;
+    services::init().await;
 }
 
 pub async fn start_serve(cfg: &Configuration) {
@@ -50,18 +51,13 @@ pub async fn start_serve(cfg: &Configuration) {
         .nest("/example", example::handlers::router(state.clone()))
         .layer(axum::middleware::from_fn(log_request));
     info!("server will start at 0.0.0.0:{}", cfg.port);
-    let serv = axum::Server::bind(&SocketAddr::from(([0, 0, 0, 0], cfg.port)))
-        .serve(app.into_make_service())
-        .await;
-    match serv {
-        Ok(_)=>{
+    if let Ok(listener) = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", cfg.port).as_str()).await {
+        if let Err(e) = axum::serve(listener, app).await {
+            error!("server fault with err:{}", e);
+        }else{
             info!("server stopped normally");
         }
-        Err(err)=>{
-            error!("server fault with err:{}", err);
-        }
     }
-    
 }
 
 async fn not_found() -> Html<String> {
@@ -71,16 +67,16 @@ async fn status()->impl IntoResponse {
     Json(json!({"status": "it works!"}))
 }
 
-async fn log_request<B>(req: Request<B>, next: Next<B>) -> impl IntoResponse {
+async fn log_request(req: Request<axum::body::Body>, next: Next) -> Response {
     info!("{} {}", req.method(), req.uri());
-    next.run(req).await.into_response()
+    next.run(req).await
 }
 
 async fn redoc_js() -> Response {
     Response::builder()
         .status(StatusCode::OK)
         .header(header::CONTENT_TYPE, "application/javascript")
-        .body(axum::body::boxed(axum::body::Full::from(include_str!("../templates/rapidoc-min.js")))).unwrap()
+        .body(axum::body::Body::new::<String>(include_str!("../templates/rapidoc-min.js").to_string())).unwrap()
 }
 
 async fn redoc_ui() -> Html<String> {

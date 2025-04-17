@@ -14,6 +14,9 @@ digraph G {
   ]
   
   // 定义类
+  StatusResponse [label = "{ -StatusResponse- |+ status :  状态值\l }"]
+  
+  // 定义类
   LoginResponse [label = "{ -LoginResponse- |+ token :  令牌\l+ expires :  过期时间\l }"]
   
 

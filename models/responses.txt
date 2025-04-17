@@ -1,3 +1,9 @@
+StatusResponse:
+  # 状态码
+  @rust String
+  @ts string
+  status: 状态值
+
 LoginResponse:
   # 登陆结果
   @rust String

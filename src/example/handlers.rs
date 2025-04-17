@@ -2,14 +2,16 @@ use axum::{Json, Router};
 use axum::routing::get;
 use serde_json::{json, Value};
 use crate::app::AppContext;
-use crate::example::services;
+use crate::services::example_service::ExampleServices;
 use crate::types::{get_serve, APIResult};
+use crate::errors::ErrResponse;
+use crate::response::StatusResponse;
 
 #[utoipa::path(
     get,
     path = "/example/",
     responses(
-            (status = 200, description = "获取文章列表有限条数", body = Response),
+            (status = 200, description = "测试Handler返回Json", body = StatusResponse),
             (status = 500, description = "服务器错误", body = ErrResponse),
             (status = 401, description = "认证失败", body = ErrResponse),
             (status = 403, description = "没有权限", body = ErrResponse)
@@ -18,10 +20,10 @@ use crate::types::{get_serve, APIResult};
         ("bearerAuth" = [])
     )
 )]
-async fn it_works() -> APIResult<Value> {
-    let serv = get_serve::<services::ExampleServices>();
+async fn it_works() -> APIResult<StatusResponse> {
+    let serv = get_serve::<ExampleServices>();
     serv.test().await?;
-    Ok(Json(json!({"status": "it works".to_string()})))
+    Ok(Json(StatusResponse{status: "it works".to_string()}))
 }
 
 // 导出路由
