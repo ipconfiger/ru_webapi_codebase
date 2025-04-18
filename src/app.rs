@@ -2,6 +2,7 @@ use std::net::SocketAddr;
 use std::time::Duration;
 use axum::response::{Html, IntoResponse, Response};
 use axum::{Json, Router};
+use axum::body::to_bytes;
 use axum::http::{header, Request, StatusCode};
 use axum::middleware::Next;
 use axum::routing::get;
@@ -15,6 +16,7 @@ use crate::errors::ErrResponse;
 use crate::conf::Configuration;
 use crate::{example, services};
 use crate::redis::{RedisHolder, RedisSession};
+use redis::AsyncCommands;
 
 #[derive(Clone)]
 pub struct AppContext {}

@@ -19,12 +19,8 @@ impl Service for ExampleServices {
 
 impl ExampleServices {
     pub(crate) async fn test(&self) -> APIResult<()> {
-        UserLogin{
-            username: "Alex".to_string(),
-            password: "123".to_string(),
-            ts: current_ts(),
-        }.insert_bind().execute(&self.db).await?;
-        info!("Running test");
+        let user = UserLogin::where_query("name=$1").bind("test").fetch_one(&self.db).await?;
+        info!("Running test:{:?}", user);
         Ok(())
     }
 

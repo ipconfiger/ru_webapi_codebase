@@ -11,6 +11,10 @@ use serde_json::{Error as JsonError, Value};
 use utoipa::ToSchema;
 use serde_json::json;
 use uuid::Error as UuidError;
+use std::backtrace::Backtrace;
+use std::fmt;
+use clap::ArgAction::Append;
+use clap::parser::ValueSource;
 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub(crate) struct ErrResponse {
@@ -19,13 +23,27 @@ pub(crate) struct ErrResponse {
 
 #[derive(Debug)]
 pub enum AppError {
-    DbError(Error),
-    RedisError(RedisError),
+    DbError {
+        source:Error,
+        backtrace: Backtrace,
+    },
+    RedisError { 
+        source: RedisError,
+        backtrace: Backtrace,
+    },
     LogicError(String),
     AuthError,
-    HttpError(HttpError),
-    JsonError(JsonError),
-    UuidError(UuidError),
+    HttpError{ 
+        source:HttpError,
+        backtrace: Backtrace,
+    },
+    JsonError { 
+        source: JsonError,
+        backtrace: Backtrace,
+    },
+    UuidError { 
+        source: UuidError, 
+        backtrace: Backtrace,},
     NotFound,
     LoginFailure,
 }
@@ -33,7 +51,7 @@ pub enum AppError {
 impl From<Error> for AppError {
     fn from(value: Error) -> Self {
         error!("数据库错误:{:?}", value);
-        Self::DbError(value)
+        Self::DbError{ source: value, backtrace: Backtrace::capture()}
     }
 }
 
@@ -45,50 +63,86 @@ impl From<String> for AppError {
 
 impl From<RedisError> for AppError {
     fn from(value: RedisError) -> Self {
-        Self::RedisError(value)
+        Self::RedisError{ source: value, backtrace: Backtrace::capture() }
     }
 }
 
 impl From<HttpError> for AppError {
     fn from(value: HttpError) -> Self {
-        Self::HttpError(value)
+        Self::HttpError{ source: value, backtrace: Backtrace::capture() }
     }
 }
 
 impl From<JsonError> for AppError {
     fn from(value: JsonError) -> Self {
-        Self::JsonError(value)
+        Self::JsonError{ source: value, backtrace: Backtrace::capture() }
     }
 }
 
 impl From<UuidError> for AppError {
     fn from(value: UuidError) -> Self {
         error!("Uuid错误:{:?}", value);
-        Self::UuidError(value)
+        Self::UuidError{ source: value, backtrace: Backtrace::capture() }
+    }
+}
+
+
+impl fmt::Display for AppError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            AppError::DbError { source, backtrace } => {
+                write!(f, "Database Error: {} \nBacktrace:\n{}", source, backtrace)
+            },
+            AppError::RedisError { source, backtrace } => {
+                write!(f, "Redis Error: {} \nBacktrace:\n{}", source, backtrace)
+            }
+            AppError::LogicError(msg) => {
+                write!(f, "Logic Error: {msg}")
+            }
+            AppError::AuthError => {
+                write!(f, "Auth Error")
+            }
+            AppError::HttpError { source, backtrace } => {
+                write!(f, "Http Error: {} \nBacktrace:\n{}", source, backtrace)
+            }
+            AppError::JsonError { source, backtrace } => {
+                write!(f, "Json Parse Error: {} \nBacktrace:\n{}", source, backtrace)
+            }
+            AppError::UuidError { source, backtrace } => {
+                write!(f, "Uuid Parse Error: {} \nBacktrace:\n{}", source, backtrace)
+            }
+            AppError::NotFound => {
+                write!(f, "Not Found")
+            }
+            AppError::LoginFailure => {
+                write!(f, "Login Failure")
+            }
+        }
     }
 }
 
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
+        eprintln!("Error: {}", self);
         let resp = match self {
-            Self::DbError(de)=>{
-                if let Error::RowNotFound = de {
-                    error!("查询记录不存在：{:?}", de);
+            Self::DbError { source, backtrace}=>{
+                if let Error::RowNotFound = source {
+                    //error!("查询记录不存在：{:?} {:?}", source, backtrace);
                     (
                         StatusCode::NOT_FOUND,
-                        Json(json!(ErrResponse{info: format!("{de:?}")}))
+                        Json(json!(ErrResponse{info: format!("{source:?}")}))
                     )
                 }else{
-                    error!("数据库错误:{:?}", de);
+                    //error!("数据库错误:{:?} {:?}", source, backtrace);
                     (
                         StatusCode::INTERNAL_SERVER_ERROR,
-                        Json(json!(ErrResponse{info: format!("{de:?}")}))
+                        Json(json!(ErrResponse{info: format!("{source:?}")}))
                     )
                    
                 }
             },
             Self::LogicError(msg)=>{
-                error!("业务错误:{}", msg);
+                //error!("业务错误:{}", msg);
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     Json(json!(ErrResponse{info: msg}))
@@ -106,39 +160,39 @@ impl IntoResponse for AppError {
                     Json(json!(ErrResponse{info: "用户名密码错误".to_string()}))
                 )
             },
-            Self::RedisError(re)=>{
-                error!("Redis错误:{:?}", re);
+            Self::RedisError { source, backtrace}=>{
+                //error!("Redis错误:{:?}, {:?}", source, backtrace);
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(json!(ErrResponse{info: format!("{re:?}")}))
+                    Json(json!(ErrResponse{info: format!("{source:?}")}))
                 )
             },
-            Self::HttpError(he)=>{
-                error!("HTTP请求错误:{:?}", he);
+            Self::HttpError { source, backtrace}=>{
+                //error!("HTTP请求错误:{:?} {:?}", source, backtrace);
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(json!(ErrResponse{info: format!("{he:?}")}))
+                    Json(json!(ErrResponse{info: format!("{source:?}")}))
                 )
             },
-            Self::JsonError(je)=>{
-                error!("Json反序列化错误:{:?}", je);
+            Self::JsonError { source, backtrace}=>{
+                //error!("Json反序列化错误:{:?} {:?}", source, backtrace);
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(json!(ErrResponse{info: format!("{je:?}")}))
+                    Json(json!(ErrResponse{info: format!("{source:?}")}))
                 )
             },
             Self::NotFound=>{
-                error!("Not found error");
+                //error!("Not found error");
                 (
                     StatusCode::NOT_FOUND,
                     Json(json!(ErrResponse{info: "请求的资源不存在".to_string()}))
                 )
             },
-            Self::UuidError(ue)=>{
-                error!("Uuid错误:{:?}", ue);
+            Self::UuidError { source, backtrace}=>{
+                //error!("Uuid错误:{:?} {:?}", source, backtrace);
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(json!(ErrResponse{info: format!("{ue:?}")}))
+                    Json(json!(ErrResponse{info: format!("{source:?}")}))
                 )
             }
         };
