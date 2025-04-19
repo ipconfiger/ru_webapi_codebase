@@ -25,5 +25,8 @@ libaes = "0.7.0"
 utoipa = { version = "5.3.1", features = ["axum_extras"] }
 utoipa-rapidoc = { version = "6.0.0", features = ["axum"] }
 aliyun-sts-rust-sdk = { version ="0.1.1", path="/Users/alex/Projects/workspace/aliyun-sts-rust-sdk"}
-sqlx = { version = "0.7.4", default-features = false, features = ["tls-rustls", "runtime-tokio", "postgres", "json", "uuid", "bigdecimal", "macros"] }
-sqlx_struct_enhanced = { version = "*", path = "/Users/alex/Projects/workspace/sqlx_struct_enhanced", features = ["postgres"] }
+sea-orm = { version = "1.1.10" , features = ["runtime-tokio", "sqlx-all"] }
+sqlx-postgres = "0.8.5"
+
+[dev-dependencies]
+sea-orm-cli = "1.1.10"

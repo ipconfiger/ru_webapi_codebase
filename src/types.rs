@@ -1,4 +1,5 @@
 use axum::Json;
+use sea_orm::DatabaseConnection;
 use crate::errors::AppError;
 use crate::redis::RedisHolder;
 
@@ -9,12 +10,12 @@ pub fn get_serve<T: 'static>() -> T {
 }
 
 pub trait Service {
-    fn init(db: sqlx::Pool<sqlx::Postgres>, redis: RedisHolder) -> Self;
+    fn init(db: DatabaseConnection, redis: RedisHolder) -> Self;
 }
 
 pub fn register_service<T: Service + 'static + Send + Sync>() {
     ru_di::Di::register(move |di| {
-        let db = di.get_inner::<sqlx::Pool<sqlx::Postgres>>().unwrap();
+        let db = di.get_inner::<DatabaseConnection>().unwrap();
         let redis = di.get_inner::<RedisHolder>().unwrap();
         T::init(db, redis)
     });

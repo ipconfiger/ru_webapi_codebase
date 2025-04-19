@@ -22,8 +22,8 @@ use crate::response::StatusResponse;
 )]
 async fn it_works() -> APIResult<StatusResponse> {
     let serv = get_serve::<ExampleServices>();
-    serv.test().await?;
-    Ok(Json(StatusResponse{status: "it works".to_string()}))
+    let resp = serv.test().await?;
+    Ok(Json(StatusResponse{status: resp}))
 }
 
 // 导出路由

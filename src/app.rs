@@ -9,7 +9,6 @@ use axum::routing::get;
 //use http::{header, Request, StatusCode};
 use log::{error, info};
 use serde_json::json;
-use sqlx::postgres::PgPoolOptions;
 use utoipa::OpenApi;
 use utoipa_rapidoc::RapiDoc;
 use crate::errors::ErrResponse;
@@ -17,23 +16,20 @@ use crate::conf::Configuration;
 use crate::{example, services};
 use crate::redis::{RedisHolder, RedisSession};
 use redis::AsyncCommands;
+use sea_orm::Database;
 
 #[derive(Clone)]
 pub struct AppContext {}
 
 pub async fn init(cfg: &Configuration) {
-    let pool = PgPoolOptions::new()
-        .max_connections(5)
-        .acquire_timeout(Duration::from_secs(3))
-        .connect(&cfg.db_uri.clone())
-        .await
-        .expect("can't connect to database");
+    let db = Database::connect(cfg.db_uri.as_str()).await.unwrap();
+    
     let client = redis::Client::open(cfg.redis_uri.clone()).unwrap();
     let client_inner = client.clone();
     ru_di::Di::register(move |_| {
         RedisHolder{client: client_inner.clone()}
     });
-    let pool_inner = pool.clone();
+    let pool_inner = db.clone();
     ru_di::Di::register(move |_| {
         pool_inner.clone()
     });

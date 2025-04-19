@@ -1,7 +1,7 @@
 use axum::Json;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use sqlx::Error;
+use sea_orm::DbErr;
 use reqwest::Error as HttpError;
 use redis::RedisError;
 use log::error;
@@ -24,7 +24,7 @@ pub(crate) struct ErrResponse {
 #[derive(Debug)]
 pub enum AppError {
     DbError {
-        source:Error,
+        source:DbErr,
         backtrace: Backtrace,
     },
     RedisError { 
@@ -48,8 +48,8 @@ pub enum AppError {
     LoginFailure,
 }
 
-impl From<Error> for AppError {
-    fn from(value: Error) -> Self {
+impl From<DbErr> for AppError {
+    fn from(value: DbErr) -> Self {
         error!("数据库错误:{:?}", value);
         Self::DbError{ source: value, backtrace: Backtrace::capture()}
     }
@@ -126,19 +126,19 @@ impl IntoResponse for AppError {
         eprintln!("Error: {}", self);
         let resp = match self {
             Self::DbError { source, backtrace}=>{
-                if let Error::RowNotFound = source {
-                    //error!("查询记录不存在：{:?} {:?}", source, backtrace);
-                    (
-                        StatusCode::NOT_FOUND,
-                        Json(json!(ErrResponse{info: format!("{source:?}")}))
-                    )
-                }else{
-                    //error!("数据库错误:{:?} {:?}", source, backtrace);
-                    (
-                        StatusCode::INTERNAL_SERVER_ERROR,
-                        Json(json!(ErrResponse{info: format!("{source:?}")}))
-                    )
-                   
+                match source {
+                    DbErr::RecordNotFound(_) => {
+                        (
+                            StatusCode::NOT_FOUND,
+                            Json(json!(ErrResponse{info: format!("{source:?}")}))
+                        )
+                    }
+                    _=>{
+                        (
+                            StatusCode::INTERNAL_SERVER_ERROR,
+                            Json(json!(ErrResponse{info: format!("{source:?}")}))
+                        )
+                    }
                 }
             },
             Self::LogicError(msg)=>{

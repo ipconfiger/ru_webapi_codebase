@@ -1,15 +1,22 @@
-use sqlx::FromRow;
-use sqlx_struct_enhanced::{EnhancedCrud, Scheme};
-use sqlx::query::{Query, QueryAs};
-use sqlx::Postgres;
-use sqlx::database::HasArguments;
-use uuid::Uuid;
-use sqlx::types::BigDecimal;
-
 {% for entity in entities %}
-#[derive(Debug, Clone, FromRow, EnhancedCrud)]
-pub struct {{ entity.name }} {
-    {% for fd in entity.fields %}pub {{fd.name}}: {{ fd.types.rust.name }},
-    {% endfor %}
+pub mod {{ entity.name }} {
+    use sea_orm::entity::prelude::*;
+    use sea_orm::{ActiveModelTrait, Database, DbErr, DeleteResult, EntityTrait, Set};
+    use serde::{Deserialize, Serialize};
+
+    #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Deserialize, Serialize)]
+    #[sea_orm(table_name = "{{ entity.name | snake_case }}")]
+    pub struct Model {
+        #[sea_orm(primary_key)]
+        {% for fd in entity.fields | slice(start=0, end=1) %}pub {{fd.name}}: {{ fd.types.rust.name }},
+        {% endfor %}
+        {% for fd in entity.fields | slice(start=1) %}pub {{fd.name}}: {{ fd.types.rust.name }},
+        {% endfor %}
+    }
+
+    #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
+    pub enum Relation {}
+    impl ActiveModelBehavior for ActiveModel {}
 }
+
 {% endfor %}
